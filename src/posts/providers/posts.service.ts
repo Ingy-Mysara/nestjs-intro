@@ -21,4 +21,8 @@ export class PostsService {
       },
     ];
   }
+
+  public createPost() {
+    return 'You sent a POST request to posts endpoint';
+  }
 }

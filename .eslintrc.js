@@ -22,12 +22,19 @@ module.exports = {
     '@typescript-eslint/explicit-module-boundary-types': 'off',
     '@typescript-eslint/no-explicit-any': 'off',
     '@typescript-eslint/no-unused-vars': 'warn',
+
+    'jsdoc/check-tag-names': 'warn',
+    'jsdoc/check-alignment': 'warn',
+    'jsdoc/require-description': 'warn',
+    'jsdoc/check-tag-names': 'off',
+
     'prettier/prettier': [
       'off',
       {
         endOfLine: 'auto',
         singleQuote: true,
         trailingComma: 'all',
+        jsdocFormat: true,
       },
     ],
   },
