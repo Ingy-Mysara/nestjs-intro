@@ -1,23 +1,23 @@
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 import {
-  IsString,
-  IsEnum,
   IsArray,
-  IsDate,
-  IsOptional,
-  IsObject,
-  MinLength,
-  IsNotEmpty,
-  Matches,
-  IsJSON,
-  IsUrl,
+  IsEnum,
+  IsInt,
   IsISO8601,
+  IsJSON,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  IsUrl,
+  Matches,
+  MaxLength,
+  MinLength,
   ValidateNested,
 } from 'class-validator';
-import { Type } from 'class-transformer';
-import { postType } from '../enums/postType.enum';
+import { CreatePostMetaOptionsDto } from '../../meta-options/dtos/create-post-meta-options.dto';
 import { postStatus } from '../enums/postStatus.enum';
-import { CreatePostMetaOptionsDto } from './create-post-meta-options.dto';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { postType } from '../enums/postType.enum';
 
 export class CreatePostDto {
   @ApiProperty({
@@ -26,6 +26,7 @@ export class CreatePostDto {
   })
   @IsString()
   @MinLength(4)
+  @MaxLength(512)
   @IsNotEmpty()
   title: string;
 
@@ -44,6 +45,7 @@ export class CreatePostDto {
   })
   @IsString()
   @IsNotEmpty()
+  @MaxLength(256)
   @Matches(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, {
     message:
       'A slug should be all small letters and uses only "-" and without spaces. For example "my-url"',
@@ -82,6 +84,7 @@ export class CreatePostDto {
   })
   @IsUrl()
   @IsOptional()
+  @MaxLength(1024)
   featuredImageUrl?: string;
 
   @ApiPropertyOptional({
@@ -93,37 +96,29 @@ export class CreatePostDto {
   publishedOn?: Date;
 
   @ApiPropertyOptional({
-    description: 'Array of tags passed as string values',
-    example: "['tag1', 'tag2']",
+    description: 'Array of IDs of tags',
+    example: '[1, 2]',
   })
-  @IsString({ each: true }) // each: true means that each item in the array should be a string
+  @IsInt({ each: true }) // each: true means that each item in the array should be a string
   @IsArray()
   @IsOptional()
-  @MinLength(3, { each: true }) // each item should have at least 3 characters
-  tags?: string[];
+  tags?: number[];
 
   @ApiPropertyOptional({
-    type: 'array',
+    type: 'object',
     required: false,
     items: {
       type: 'object',
       properties: {
-        key: {
+        metaValue: {
           type: 'string',
-          description:
-            'The key can be any string identifier for your meta option',
-          example: 'sidebarEnabled',
-        },
-        value: {
-          type: 'any',
-          description: 'Any value that you want to save to the key',
-          example: true,
+          description: 'The metaValue is a JSON string',
+          example: '{"sidebarEnabled": true}',
         },
       },
     },
   }) // metadata options is not required, but objects inside the array are required
   @IsOptional()
-  @IsArray()
   // Nested validation
   @ValidateNested({ each: true })
   @Type(() => CreatePostMetaOptionsDto)
@@ -131,5 +126,14 @@ export class CreatePostDto {
   // First, it matches the incoming request to this particular DTO over here and creates an instance of this particular DTO whenever an incoming request comes in.
   // Secondly, all the properties of the objects are validated against the create post meta options DTO.
   // So the incoming object should contain all these properties, and it should match all the validations
-  metaOptions?: CreatePostMetaOptionsDto[];
+  metaOptions?: CreatePostMetaOptionsDto | null;
+
+  @IsInt()
+  @IsNotEmpty()
+  @ApiProperty({
+    type: 'integer',
+    required: true,
+    example: 1,
+  })
+  authorId: number;
 }
