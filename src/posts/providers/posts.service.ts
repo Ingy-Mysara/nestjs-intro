@@ -1,4 +1,9 @@
-import { Body, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Body,
+  Injectable,
+  RequestTimeoutException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { MetaOption } from 'src/meta-options/meta-option.entity';
 import { Repository } from 'typeorm';
@@ -48,13 +53,37 @@ export class PostsService {
   }
 
   public async update(patchPostDto: PatchPostDto) {
-    // find the Tags
-    let tags = await this.tagsService.findMultipleTags(patchPostDto.tags);
+    let tags = undefined;
+    let post = undefined;
 
-    // find the Posts
-    let post = await this.postsRepository.findOneBy({
-      id: patchPostDto.id,
-    });
+    try {
+      tags = await this.tagsService.findMultipleTags(patchPostDto.tags);
+    } catch (error) {
+      throw new RequestTimeoutException(
+        'Unable to process your request at the moment',
+      );
+    }
+    /**
+     * Number of tags sent needs to be equal to the number of tags returned
+     */
+    if (!tags || tags.length !== patchPostDto.tags.length) {
+      throw new BadRequestException('Please check your tag IDs');
+    }
+
+    try {
+      // find the Tags
+      post = await this.postsRepository.findOneBy({
+        id: patchPostDto.id,
+      });
+    } catch (error) {
+      throw new RequestTimeoutException(
+        'Unable to process your request at the moment',
+      );
+    }
+
+    if (!post) {
+      throw new BadRequestException('Post ID does not exist');
+    }
 
     // update the properties
     post.title = patchPostDto.title ?? post.title;
@@ -69,8 +98,15 @@ export class PostsService {
     // assign the new tags
     post.tags = tags;
 
+    try {
+      await this.postsRepository.save(post);
+    } catch (error) {
+      throw new RequestTimeoutException(
+        'Unable to process your request at the moment',
+      );
+    }
     // save the post and return
-    return await this.postsRepository.save(post);
+    return post;
   }
 
   public async create(@Body() createPostDto: CreatePostDto) {
